@@ -15,6 +15,7 @@ import com.amazonaws.services.polly.model.OutputFormat;
 import com.amazonaws.services.polly.model.SynthesizeSpeechRequest;
 import com.amazonaws.services.polly.model.SynthesizeSpeechResult;
 import com.amazonaws.services.polly.model.Voice;
+import models.ListeningExercise;
 import spark.utils.IOUtils;
 import spark.Request;
 import spark.Response;
@@ -23,14 +24,22 @@ import javax.servlet.http.HttpServletResponse;
 
 public class ListeningController {
 
-    public static HttpServletResponse getAudio(Request req, Response res) {
+    public static ListeningExercise getExercise(Request req, Response res) {
+        int id = new Integer(req.params(":id"));
+        return ListeningExercise.getExercises()[id];
+    }
+
+    public static HttpServletResponse getSentenceAudio(Request req, Response res) {
+        int id = new Integer(req.params(":id"));
+        int sentenceId = new Integer(req.params(":sentence"));
+
+        ListeningExercise exercise = ListeningExercise.getExercises()[id];
+
         AmazonPolly client = AmazonPollyClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
                 .withClientConfiguration(new ClientConfiguration())
                 .withCredentials(new EnvironmentVariableCredentialsProvider())
                 .build();
-
-        String text = "Je suis une baguette";
 
         DescribeVoicesRequest voicesRequest = new DescribeVoicesRequest();
         DescribeVoicesResult voicesResult = client.describeVoices(voicesRequest);
@@ -46,7 +55,11 @@ public class ListeningController {
             }
         }
 
-        SynthesizeSpeechRequest synthReq = new SynthesizeSpeechRequest().withText(text).withVoiceId(frenchVoice.getId()).withOutputFormat(OutputFormat.Mp3);
+        SynthesizeSpeechRequest synthReq = new SynthesizeSpeechRequest().
+                withText(exercise.getSentences()[sentenceId])
+                .withVoiceId(frenchVoice.getId())
+                .withOutputFormat(OutputFormat.Mp3);
+
         SynthesizeSpeechResult synthRes = client.synthesizeSpeech(synthReq);
         InputStream speechStream = synthRes.getAudioStream();
 
